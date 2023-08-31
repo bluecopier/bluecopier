@@ -1,0 +1,24 @@
+site_name: "Bluecopier"
+
+theme:
+  name: "material"
+
+plugins:
+- gen-files:
+    scripts:
+      - src/scripts/generate-markdown-docs.py
+- git-revision-date-localized
+- mkdocstrings:
+    handlers:
+      python:
+        paths: [src]
+        options:
+          docstring_style: sphinx
+          docstring_section_style: table
+          merge_init_into_class: yes
+          show_source: true
+          show_category_heading: true
+          members_order: source
+          show_if_no_docstring: true
+        enable_inventory: true
+- search

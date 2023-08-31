@@ -1,0 +1,36 @@
+default_language_version:
+    python: python3.11
+
+repos:
+  - hooks:
+      - id: pyproject-fmt
+    repo: https://github.com/tox-dev/pyproject-fmt
+    rev: 1.1.0
+  - hooks:
+      - id: mypy
+        exclude: ^blueprints
+        additional_dependencies: [
+          mkdocs,
+          mkdocs-gen-files,
+          Jinja2,
+          PyGitHub,
+          rich,
+          tomlkit,
+          typer,
+          types-appdirs,
+          types-jinja2,
+          types-PyYAML,
+          types-requests,
+        ]
+        args: [--python-version=3.11]
+    repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.5.1
+  - hooks:
+      - id: black
+    repo: https://github.com/psf/black
+    rev: 23.7.0
+  - hooks:
+      - id: ruff
+        args: [ --fix, --exit-non-zero-on-fix, src ]
+    repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.0.286

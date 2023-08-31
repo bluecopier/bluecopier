@@ -1,0 +1,7 @@
+{
+  "name": "{{project_name}}",
+  "devDependencies": {
+    "@types/node": "^20.5.7",
+    "typescript": "^5.2.2"
+  }
+}

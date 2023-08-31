@@ -1,0 +1,38 @@
+blueprint:
+  name: django
+  uses:
+    - python
+  dependencies:
+    - Django>=4.2
+    - dj-database-url
+  dependencies[types]:
+    - django-stubs
+    - django-stubs-ext
+  source_root: src
+
+#  replacements:
+#    - type: path
+#      value: django_todo_app
+#      replace_with: project_name
+
+features:
+  django_admin_ui:
+    name: Enable Admin UI via Django Admin
+    default: true
+    include_if_true:
+      - api/admin.py
+  django_rest_api:
+    name: Enable REST API via Django REST Framework
+    default: true
+    include_if_true:
+      - django_project/drf_settings.py
+    dependencies:
+      - django-cors-headers
+      - djangorestframework
+    dependencies[types]:
+      - djangorestframework-stubs
+  django_social_auth:
+    name: Enable social authentication via Django Social Auth
+    default: true
+    include_if_true:
+      - django_project/social_settings.py

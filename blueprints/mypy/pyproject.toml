@@ -1,0 +1,20 @@
+# https://mypy-lang.org
+[project.optional-dependencies]
+types = [
+  "mypy",
+]
+
+[tool.mypy]
+mypy_path = "${blueprint.sources_root}"
+python_version = "${python_version}"
+strict = true
+warn_unused_configs = true
+namespace_packages = false
+show_error_codes = true
+show_column_numbers = true
+show_error_context = true
+pretty = true
+
+[[tool.mypy.overrides]]
+module = []
+ignore_missing_imports = true

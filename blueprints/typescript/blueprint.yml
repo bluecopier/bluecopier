@@ -1,0 +1,24 @@
+blueprint:
+  ignore:
+    - .npmrc
+    - node_modules
+  uses:
+    - editorconfig
+    - gitignore
+    - license
+features:
+#  code_linting:
+#    name: Enable code linting via Ruff
+#    default: true
+#    uses:
+#      - eslint
+  code_formatting:
+    name: Enable code formatting via Black
+    default: true
+    uses:
+      - prettier
+  unit_testing:
+    name: Enable unit-testing via Jest
+    default: true
+    uses:
+      - jest

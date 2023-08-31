@@ -1,0 +1,28 @@
+blueprint:
+  name: python
+  uses:
+    - editorconfig
+    - license
+  entrypoint: src/app/main.py
+
+features:
+  code_linting:
+    name: Enable code linting via Ruff
+    default: true
+    uses:
+      - ruff
+  code_formatting:
+    name: Enable code formatting via Black
+    default: true
+    uses:
+      - black
+  type_checking:
+    name: Enable type-checking via Mypy
+    default: true
+    uses:
+      - mypy
+  unit_testing:
+    name: Enable unit-testing via Pytest
+    default: true
+    uses:
+      - pytest

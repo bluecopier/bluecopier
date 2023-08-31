@@ -1,0 +1,13 @@
+[user]
+author = "Johan Dahlin"
+email = "jdahlin@gmail.com"
+
+[editor]
+tab-size = 4
+indent-size = 4
+indent-style = "space"
+default = "vscode"
+
+[github]
+username = "jdahlin"
+org = "my-org"

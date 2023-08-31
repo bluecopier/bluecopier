@@ -1,0 +1,4 @@
+blueprint:
+  ignore:
+    - .npmrc
+    - node_modules

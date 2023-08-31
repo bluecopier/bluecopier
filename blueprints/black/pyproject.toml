@@ -1,0 +1,16 @@
+# https://github.com/psf/black
+# https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html
+[project.optional-dependencies]
+dev = [
+  "black",
+]
+
+[tool.black]
+# https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html#include
+include = "\\.pyi?$"
+
+# https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html#l-line-length
+line-length = 88
+
+# https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html#t-target-version
+target-version = ["py${python_version|replace('.', '')}"]

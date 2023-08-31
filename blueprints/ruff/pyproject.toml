@@ -1,0 +1,59 @@
+# https://github.com/astral-sh/ruff
+[project.optional-dependencies]
+dev = [
+  "ruff",
+]
+
+[tool.ruff]
+src = ["${blueprint.source_root}"]
+line-length = 88
+select = [
+  "E",     # pycodestyle (supersedes pep8)
+  "F",     # pyflakes
+  "W",     # pycodestyle warnings
+  "C90",   # mccabe
+  "I",     # isort
+  "N",     # pep8-naming
+  # "D",   # pydocstyle
+  "UP",    # pyupgrade
+  "ERA",   # eradicate
+  "YTT",   # flake8-2020
+  "ANN",   # flake8-annotations
+  "S",     # flake8-bandit
+  "BLE",   # flake8-blind-except
+  "FBT",   # flake8-boolean-trap
+  "B",     # flake8-bugbear
+  "A",     # flake8-builtins
+  "COM",   # flake8-commas
+  "C4",    # flake8-comprehensions
+  "DTZ",   # flake8-datetimez
+  "T10",   # flake8-debugger
+  # "EM",  # flake8-errmsg
+  "EXE",   # flake8-executable
+  "ICN",   # flake8-import-conventions
+  "PIE",   # flake8-pie
+  # "T20", # flake8-print
+  "PYI",   # flake8-pyi
+  "Q",     # flake8-quotes
+  "RSE",   # flake8-raise
+  # "RET", # flake8-return
+  "SLF",   # flake8-self
+  "SIM",   # flake8-simplify
+  "TID",   # flake8-tidy-imports
+  "TCH",   # flake8-type-checking
+  # "ARG", # flake8-unused-arguments
+  "PGH",   # pygrep-hooks
+  "PLC",   # pylint Convention
+  "PLE",   # pylint Error
+  "PLR",   # pylint Refactor
+  "PLW",   # pylint Warning
+  "RUF",   # ruff-specific rules
+]
+ignore = [
+  "ANN101",
+  "ANN102",
+  "ANN401",  # typing.Any is okay for kwargs
+  "S101",    # assert is useful for mypy
+  "S308",    # mark_safe can be useful
+  "PLR0913", # too many arguments
+]

@@ -1,0 +1,18 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = [
+  "hatchling",
+]
+
+[project]
+name = "python-base"
+description = "Production ready Todo App in Django/DRF"
+plugins = ["mypy_django_plugin.main"]
+
+[tool.pytest.ini_options]
+filterwarnings = []
+DJANGO_SETTINGS_MODULE = "todo.django_project.settings.test"
+addopts = "--create-db --no-migrations"
+
+[tool.django-stubs]
+django_settings_module = "todo.django_project.settings.test"
