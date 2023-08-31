@@ -1,5 +1,5 @@
 {
-  "name": "{{project_name}}",
+  "name": "{{project.name}}",
   "devDependencies": {
     "@types/node": "^20.5.7",
     "typescript": "^5.2.2"

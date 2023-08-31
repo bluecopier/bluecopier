@@ -26,7 +26,9 @@ dynamic = [
 ]
 dependencies = [
   "appdirs",
-  "black",
+  "commentjson",
+  "jinja2",
+  "pre-commit",
   "PyGitHub",
   "PyYAML",
   "requests",
@@ -35,10 +37,17 @@ dependencies = [
   "typer",
 ]
 [project.optional-dependencies]
+dev = [
+  "black",
+]
 docs = [
   "mkdocs",
   "mkdocs-material",
   "mkdocstrings[python]",
+]
+test = [
+  "pytest",
+  "pytest-github-actions-annotate-failures",
 ]
 types = [
   "mypy",
@@ -51,7 +60,7 @@ Source = "https://github.com/jdahlin/bluecopier"
 Tracker = "https://github.com/jdahlin/bluecopier/issues"
 
 [tool.hatch.version]
-path = "src/app/__version__.py"
+path = "src/bluecopier/__version__.py"
 
 [tool.black]
 line-length = 110
@@ -127,6 +136,28 @@ ignore = [
   "S308",    # mark_safe can be useful
   "S603",    # skipping shell=True is faster
   "PLR0913", # too many arguments
+]
+
+[tool.pytest.ini_options]
+addopts =[
+    "--show-capture=stdout",
+    "--tb=short",
+#    "-W error::Warning",
+    "-vv"
+]
+norecursedirs = [
+    ".git",
+    ".ruff_cache",
+    ".mypy_cache",
+    "node_modules",
+]
+
+filterwarnings = [
+    # https://pypi.org/project/lark-parser/ - v0.12.0 - 2021-08-30 -> moved to `lark`
+    # https://pypi.org/project/commentjson/ - v0.9.0 - 2020-10-05
+    # https://github.com/vaidik/commentjson/issues/51
+    # Fixed upstream, commentjson depends on old version and seems to be unmaintained
+    "ignore:module '(sre_parse|sre_constants)' is deprecate:DeprecationWarning:lark.utils",
 ]
 
 [tool.mypy]

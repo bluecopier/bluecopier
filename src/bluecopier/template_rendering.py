@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, NamedTuple, cast
 
 import jinja2
-from jinja2.utils import missing
 
 import bluecopier
 
@@ -15,7 +14,7 @@ BLUEPRINT_DIR = ROOT_DIR / "blueprints"
 
 
 class EnvironmentOverrides(NamedTuple):
-    line_statement_prefix: str | missing = missing
+    line_statement_prefix: str | None = None
     block_start_string: str = "{%"
     block_end_string: str = "%}"
     variable_start_string: str = "{{"
@@ -95,7 +94,8 @@ def get_environment_for_path(path: Path) -> Environment:
                 block_start_string=overrides.block_start_string,
                 comment_start_string=overrides.comment_start_string,
                 comment_end_string=overrides.comment_end_string,
-                line_statement_prefix=overrides.line_statement_prefix,
+                # bug in types-jinja2, should allow str | None
+                line_statement_prefix=cast(str, overrides.line_statement_prefix),
                 variable_start_string=overrides.variable_start_string,
                 variable_end_string=overrides.variable_end_string,
             ),
@@ -119,12 +119,16 @@ def maybe_render_jinja_template(*, source_path: Path, content: str, blueprint: "
             ) from exc
         user_options = blueprint.project.user_options
         context = {
-            "blueprint": blueprint,
-            "project_name": user_options.project_name,
-            "python_version": user_options.python_version,
             "author_name": user_options.author_name,
             "author_email": user_options.author_email,
+            "blueprint": blueprint,
             "license": user_options.license_,
+            "project": blueprint.project,
+            "python_version": user_options.python_version,
         }
-        rendered = template.render(source_path=source_path, context=context)
+        try:
+            rendered = template.render(source_path=source_path, context=context)
+        except jinja2.UndefinedError as exc:
+            raise jinja2.UndefinedError(f"Error in {source_path}: {exc.message}") from exc
+
     return rendered
