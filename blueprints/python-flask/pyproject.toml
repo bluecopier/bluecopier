@@ -1,0 +1,9 @@
+# https://flask.palletsprojects.com/
+[project]
+dependencies = [
+  "Flask",
+]
+
+#[project.optional-dependencies]
+#types = [
+#]
