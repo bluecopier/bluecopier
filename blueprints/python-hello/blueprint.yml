@@ -1,0 +1,5 @@
+blueprint:
+  name: python-hello
+  uses:
+    - python
+  entrypoint: src/app/main.py
