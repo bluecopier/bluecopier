@@ -26,7 +26,7 @@ dynamic = [
 ]
 dependencies = [
   "appdirs",
-  "black",
+  "commentjson",
   "PyGitHub",
   "PyYAML",
   "requests",
@@ -35,10 +35,17 @@ dependencies = [
   "typer",
 ]
 [project.optional-dependencies]
+dev = [
+  "black",
+]
 docs = [
   "mkdocs",
   "mkdocs-material",
   "mkdocstrings[python]",
+]
+test = [
+  "pytest",
+  "pytest-github-actions-annotate-failures",
 ]
 types = [
   "mypy",
