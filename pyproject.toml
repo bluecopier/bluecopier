@@ -27,6 +27,7 @@ dynamic = [
 dependencies = [
   "appdirs",
   "commentjson",
+  "jinja2",
   "PyGitHub",
   "PyYAML",
   "requests",
