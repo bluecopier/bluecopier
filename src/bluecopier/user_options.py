@@ -15,6 +15,7 @@ from bluecopier.enums import CodeHosting, License
 def get_username() -> str:
     git = shutil.which("git")
     assert git is not None
+
     try:
         username = subprocess.check_output([git, "config", "user.name"], encoding="utf-8")
     except subprocess.CalledProcessError:

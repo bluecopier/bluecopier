@@ -1,0 +1,45 @@
+name: pytest
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: 1
+  FORCE_COLOR: 1
+  TERM: xterm-256color  # needed for FORCE_COLOR to work on mypy on Ubuntu, see https://github.com/python/mypy/issues/13817
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+    checks: write
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: pip
+        cache-dependency-path: pyproject.toml
+    - name: Install dependencies
+      run: |
+        python -m pip install -e .[test]
+        python -m pip install pytest-github-actions-annotate-failures
+    - name: Test with pytest
+      run: |
+        pytest --junitxml=junit/test-results.xml
+    - name: Publish Test Report
+      uses: mikepenz/action-junit-report@v3
+      if: success() || failure() # always run even if the previous step fails
+      with:
+        report_paths: 'junit/test-results.xml'

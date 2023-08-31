@@ -31,6 +31,10 @@ class Project:
         self.master_blueprint = self.loader.load(name=blueprint_name)
 
     @property
+    def name(self) -> str:
+        return self.user_options.project_name
+
+    @property
     def output_path(self) -> Path:
         return self.user_options.output_dir
 
