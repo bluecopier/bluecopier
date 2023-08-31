@@ -10,6 +10,9 @@ repos:
   - hooks:
       - id: mypy
         additional_dependencies: [
+          "mkdocs",
+          "mkdocs-gen-files",
+          "PyGithub",
           "tomlkit",
           "typer[rich]",
           "types-appdirs",
