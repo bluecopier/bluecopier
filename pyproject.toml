@@ -28,6 +28,7 @@ dependencies = [
   "appdirs",
   "commentjson",
   "jinja2",
+  "pre-commit",
   "PyGitHub",
   "PyYAML",
   "requests",
