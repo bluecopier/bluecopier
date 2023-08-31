@@ -50,8 +50,13 @@ test = [
   "pytest-github-actions-annotate-failures",
 ]
 types = [
-  "mypy",
+  "mkdocs",
+  "mkdocs-gen-files",
+  "PyGithub",
+  "tomlkit",
+  "typer[rich]",
   "types-appdirs",
+  "types-jinja2",
   "types-PyYAML",
   "types-requests",
 ]
