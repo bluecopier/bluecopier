@@ -51,7 +51,7 @@ Source = "https://github.com/jdahlin/bluecopier"
 Tracker = "https://github.com/jdahlin/bluecopier/issues"
 
 [tool.hatch.version]
-path = "src/app/__version__.py"
+path = "src/bluecopier/__version__.py"
 
 [tool.black]
 line-length = 110
