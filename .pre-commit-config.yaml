@@ -10,6 +10,9 @@ repos:
   - hooks:
       - id: mypy
         additional_dependencies: [
+          "mkdocs",
+          "mkdocs-gen-files",
+          "PyGithub",
           "tomlkit",
           "typer[rich]",
           "types-appdirs",
@@ -17,6 +20,7 @@ repos:
           "types-PyYAML",
           "types-requests",
         ]
+        args: [--junit-xml=.mypy_cache/junit.xml]
         exclude: ^blueprints
     repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.5.1
