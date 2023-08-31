@@ -5,7 +5,9 @@ import shutil
 import subprocess
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Any, cast
 
+import tomlkit
 import yaml
 
 from bluecopier.blueprint.blueprint import Blueprint, BlueprintName
@@ -120,18 +122,56 @@ class Project:
                 pkg, version = line.split("==")
                 deps[pkg] = version
 
-    def run_formatters(self) -> None:
+    def _set_pre_commit_mypy_additional_dependencies(self) -> list[dict[str, Any]]:
+        pyproject_path = self.output_path / "pyproject.toml"
+        with pyproject_path.open() as f:
+            pyproject = tomlkit.parse(f.read())
+
         content = self.output_path / ".pre-commit-config.yaml"
         with content.open("rb") as stream:
             repos = yaml.safe_load(stream)
-        if repos:
-            hooks = []
+            # This is all a big fat hack, but need to fix two things before it can be removed
+            # 1. pre-commit-config.yaml needs to be able to reference dependencies loaded from pyproject.toml
+            # 2. Needs to be able to have a better understanding of the contents of pyproject.toml
+            #    a) fetching all dependencies
+            #    b) pinning dependencies like npm does
             for repo in repos["repos"]:
+                if repo["repo"] != "https://github.com/pre-commit/mirrors-mypy":
+                    continue
                 for hook in repo["hooks"]:
-                    hooks.append(hook["id"])
-            logger.info(f'Running pre-commit hooks: {", ".join(sorted(hooks))}')
-            output = self.run("pre-commit", "run", "--all-files", capture_output=True)
-            if output.returncode != 0:
-                logger.warning("pre-commit failed, check out logs")
-                logger.info(output.stderr.decode("utf-8"))
-                logger.info(output.stdout.decode("utf-8"))
+                    if hook["id"] != "mypy":
+                        continue
+                    optional_dependencies = pyproject.get("project", {}).get("optional-dependencies")
+                    if not optional_dependencies:
+                        continue
+                    hook["additional_dependencies"] = [str(s) for s in optional_dependencies["types"].value]
+
+        with content.open("wt") as stream:
+            yaml.dump(repos, stream)
+
+        return cast(list[dict[str, Any]], repos["repos"])
+
+    def run_formatters(self) -> None:
+        repos = self._set_pre_commit_mypy_additional_dependencies()
+        if not repos:
+            return
+
+        # Note: perhaps avoid using pre-commit here and ask each formatter
+        #       to run, but then we need to understand the dependencies better
+        hooks = []
+        for repo in repos:
+            for hook in repo["hooks"]:
+                hooks.append(hook["id"])
+        logger.info(f'Running pre-commit hooks: {", ".join(sorted(hooks))}')
+        output = self.run(
+            "pre-commit",
+            "run",
+            "-c",
+            ".pre-commit-config.yaml",
+            "--all-files",
+            capture_output=True,
+        )
+        if output.returncode != 0:
+            logger.warning("pre-commit failed, check out logs")
+            logger.info(output.stderr.decode("utf-8"))
+            logger.info(output.stdout.decode("utf-8"))

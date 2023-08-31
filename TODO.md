@@ -49,6 +49,8 @@ TODO items
 # TODO: Dockerfile
 # TODO: js/ts (eslint)
 # TODO: Performance is important, 1min from start to working app
+# TODO: package manager abstraction is needed soon, so we can resolve dependencies better
+# TODO: pre-commit hooks depends on pyproject generation
 
 # 1. Generate Code
 # 2. Generate Tests

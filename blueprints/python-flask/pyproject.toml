@@ -4,6 +4,8 @@ dependencies = [
   "Flask",
 ]
 
-#[project.optional-dependencies]
-#types = [
-#]
+[project.optional-dependencies]
+types = [
+  "Flask",
+  "types-Flask"
+]

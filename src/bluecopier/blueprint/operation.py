@@ -97,17 +97,6 @@ def merge_toml_operations(ops: list[Operation]) -> WriteFileOp:
     return write_op
 
 
-def merge_yaml_operations(ops: list[Operation]) -> WriteFileOp:
-    first = ops[0]
-    assert isinstance(first, WriteFileOp)
-    a = yaml.safe_load(first.content)
-    for op in ops[1:]:
-        assert isinstance(op, WriteFileOp)
-        merge_json_documents(a, b=yaml.safe_load(op.content))
-    write_op = WriteFileOp(destination=first.destination, content=yaml.dump(a))
-    return write_op
-
-
 def merge_json_operations(ops: list[Operation]) -> WriteFileOp:
     first = ops[0]
     assert isinstance(first, WriteFileOp)
@@ -116,6 +105,17 @@ def merge_json_operations(ops: list[Operation]) -> WriteFileOp:
         assert isinstance(op, WriteFileOp)
         merge_json_documents(a, b=json.loads(op.content))
     write_op = WriteFileOp(destination=first.destination, content=json.dumps(a, indent=4))
+    return write_op
+
+
+def merge_yaml_operations(ops: list[Operation]) -> WriteFileOp:
+    first = ops[0]
+    assert isinstance(first, WriteFileOp)
+    a = yaml.safe_load(first.content)
+    for op in ops[1:]:
+        assert isinstance(op, WriteFileOp)
+        merge_json_documents(a, b=yaml.safe_load(op.content))
+    write_op = WriteFileOp(destination=first.destination, content=yaml.dump(a))
     return write_op
 
 
