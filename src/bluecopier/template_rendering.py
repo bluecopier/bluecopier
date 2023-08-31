@@ -97,7 +97,7 @@ def get_environment_for_path(path: Path) -> Environment:
                 # bug in types-jinja2, should allow str | None
                 line_statement_prefix=cast(str, overrides.line_statement_prefix),
                 variable_start_string=overrides.variable_start_string,
-                variable_end_string=overrides.variable_end_string,
+                variable_end_string=1,
             ),
         )
         _environments[ext] = environment
