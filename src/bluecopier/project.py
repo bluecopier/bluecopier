@@ -1,6 +1,7 @@
 import collections
 import dataclasses
 import logging
+import os
 import shutil
 import subprocess
 from collections.abc import Iterable
@@ -11,12 +12,13 @@ import tomlkit
 import yaml
 
 from bluecopier.blueprint.blueprint import Blueprint, BlueprintName
+from bluecopier.blueprint.configuration import RequireItem
 from bluecopier.blueprint.loader import BlueprintLoader
 from bluecopier.blueprint.operation import merge_operations
 from bluecopier.user_options import UserOptions
 from bluecopier.vcs.githubvcs import VCS
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("prj")
 
 
 @dataclasses.dataclass
@@ -25,12 +27,13 @@ class Project:
 
     loader: BlueprintLoader = dataclasses.field(init=False)
 
-    master_blueprint: Blueprint = dataclasses.field(init=False)
+    extra_context: dict[str, Any] = dataclasses.field(init=False, default_factory=dict)
 
     def __post_init__(self) -> None:
         self.loader = BlueprintLoader(project=self)
-        blueprint_name = self.user_options.blueprint_name
-        self.master_blueprint = self.loader.load(name=blueprint_name)
+
+    def load_blueprint(self, blueprint: BlueprintName, *, directly_included: bool) -> Blueprint:
+        return self.loader.load(name=blueprint, directly_included=directly_included)
 
     @property
     def name(self) -> str:
@@ -43,9 +46,8 @@ class Project:
     def blueprint_loaded(self, name: str) -> bool:
         return name in self.loader.blueprints_by_name
 
-    @property
-    def entrypoint(self) -> str | None:
-        return self.master_blueprint.config.entrypoint
+    # @property
+    # def entrypoint(self) -> str | None:
 
     @property
     def vcs(self) -> str | None:
@@ -57,31 +59,53 @@ class Project:
     def blueprints(self) -> Iterable[Blueprint]:
         return list(self.loader.blueprints_by_name.values())
 
-    def run(self, *args: str, capture_output: bool = False) -> subprocess.CompletedProcess[bytes]:
+    def run(
+        self,
+        *args: str,
+        capture_output: bool = False,
+        env: dict[str, str] | None = None,
+    ) -> subprocess.CompletedProcess[bytes]:
+        if env is None:
+            env = {}
+        cwd = str(self.output_path.absolute())
         return subprocess.run(
             args,
-            cwd=str(self.output_path),
+            cwd=cwd,
             capture_output=capture_output,
             check=False,
+            env=os.environ | env,
         )
 
-    def write_state(self) -> None:
-        bluecopier_dir = self.output_path / ".bluecopier"
-        bluecopier_dir.mkdir(exist_ok=True)
-        with (bluecopier_dir / "state.yml").open("w") as f:
-            yaml.dump(
-                {
-                    "blueprints": {
-                        "master": self.master_blueprint.name,
-                        "includes": [
-                            {"name": b.name} for b in self.blueprints if b.name != self.master_blueprint.name
-                        ],
-                    },
-                },
-                f,
-            )
+    def get_template_context(self) -> dict[str, Any]:
+        user_options = self.user_options
+        context = {
+            "author_name": user_options.author_name,
+            "author_email": user_options.author_email,
+            "license": user_options.license_,
+            "project": self,
+            "python_version": user_options.python_version,
+        } | self.extra_context
+        return context
 
-    def generate(self) -> None:
+    @classmethod
+    def from_path(cls, project_path: Path) -> "Project":
+        state_path = project_path / ".bluecopier" / "state.yml"
+        with state_path.open("rt") as f:
+            state = yaml.load(f, Loader=yaml.Loader)  # noqa: S506
+        user_options = state.pop("user_options")
+        project = cls(user_options=UserOptions.from_dict(user_options), **state)
+        return project
+
+    def asdict(self) -> dict[str, Any]:
+        return {"user_options": self.user_options.asdict()}
+
+    def write_state(self) -> None:
+        bluecopier_path = self.output_path / ".bluecopier"
+        bluecopier_path.mkdir(exist_ok=True)
+        with (bluecopier_path / "state.yml").open("w") as f:
+            yaml.dump(self.asdict(), f)
+
+    def generate(self, *, clear: bool = False) -> None:
         operations = collections.defaultdict(list)
         for blueprint in self.blueprints:
             for op in blueprint.get_operations():
@@ -90,13 +114,11 @@ class Project:
 
         # TODO: support update/incremental without deleting existing directory
         destination_dir = self.output_path
-        shutil.rmtree(destination_dir, ignore_errors=True)
+        if clear:
+            shutil.rmtree(destination_dir, ignore_errors=True)
         destination_dir.mkdir(exist_ok=True)
         for _path, exop in merged_operations.items():
             exop.execute(destination_dir)
-
-    def load_blueprint(self, blueprint: BlueprintName) -> None:
-        self.loader.load(name=blueprint)
 
     def get_vcs(self) -> VCS:
         logger.info("Loading GitHub VCS")
@@ -106,21 +128,24 @@ class Project:
 
     def install_dependencies(self) -> None:
         logger.info("Installing and pinning dependencies")
-        # TODO: configure package manager in blueprint
-        #       this should be PackageManager().install_dev_dependencies()
-        if self.master_blueprint.name == "typescript":
-            self.run("npm", "install")
-        elif self.master_blueprint.name == "python":
-            # TODO: cache venvs to speed up subsequent runs
-            self.run("python", "-mvenv", "venv", "--upgrade-deps")
-            self.run("venv/bin/pip", "install", "-e", ".[dev]", "-q")
-            output = self.run("venv/bin/pip", "freeze", capture_output=True)
-            deps = {}
-            for line in output.stdout.decode("utf-8").splitlines():
-                if line.startswith(("#", "-")):
-                    continue
-                pkg, version = line.split("==")
-                deps[pkg] = version
+        for blueprint in self.loader.blueprints_by_name.values():
+            if not blueprint.directly_included:
+                continue
+            # TODO: configure package manager in blueprint
+            #       this should be PackageManager().install_dev_dependencies()
+            if blueprint.name == "typescript":
+                self.run("npm", "install")
+            elif blueprint.name == "python":
+                # TODO: cache venvs to speed up subsequent runs
+                self.run("python", "-mvenv", "venv", "--upgrade-deps")
+                self.run("venv/bin/pip", "install", "-e", ".[dev]", "-q")
+                output = self.run("venv/bin/pip", "freeze", capture_output=True)
+                deps = {}
+                for line in output.stdout.decode("utf-8").splitlines():
+                    if line.startswith(("#", "-")):
+                        continue
+                    pkg, version = line.split("==")
+                    deps[pkg] = version
 
     def _set_pre_commit_mypy_additional_dependencies(self) -> list[dict[str, Any]]:
         pyproject_path = self.output_path / "pyproject.toml"
@@ -168,10 +193,72 @@ class Project:
             "run",
             "-c",
             ".pre-commit-config.yaml",
-            "--all-files",
             capture_output=True,
         )
         if output.returncode != 0:
             logger.warning("pre-commit failed, check out logs")
             logger.info(output.stderr.decode("utf-8"))
             logger.info(output.stdout.decode("utf-8"))
+
+    def parse_providers(self, direct: list[Blueprint]) -> dict[str, list[str | bool]]:
+        providers: dict[str, list[str | bool]] = collections.defaultdict(list)
+        for blueprint in direct:
+            if blueprint.config.provides is None:
+                continue
+            for provide in blueprint.config.provides:
+                match provide:
+                    case str(provide):
+                        providers[provide].append(True)
+                    case dict():
+                        for key, value in provide.items():
+                            providers[key].append(cast(str, value))
+                    case _:
+                        raise NotImplementedError(provide)
+
+        return providers
+
+    def validate_require(
+        self,
+        require_blueprint: Blueprint,
+        providers: dict[str, list[str | bool]],
+        require: RequireItem | str,
+    ) -> None:
+        match require:
+            case {"name": str(name), "optional": optional}:
+                pass
+            case str(name):
+                optional = False
+            case _:
+                raise NotImplementedError
+
+        values = providers.get(name, [])
+        if not values:
+            if not optional:
+                raise Exception(f"Missing provider for {name}")
+        elif len(values) == 1:
+            require_blueprint.link(name, values[0])
+        else:
+            raise NotImplementedError(f"Multiple providers for {name}")
+
+    def resolve_links(self) -> None:
+        direct = []
+        for b in self.loader.blueprints_by_name.values():
+            if b.directly_included:
+                direct.append(b)
+        providers = self.parse_providers(direct)
+
+        for require_blueprint in direct[:]:
+            if require_blueprint.config.requires is None:
+                continue
+            for require in require_blueprint.config.requires:
+                self.validate_require(require_blueprint, providers, require)
+
+    def build(self) -> None:
+        logger.info("Building project")
+        for blueprint in self.blueprints:
+            blueprint.build()
+
+    def deploy(self) -> None:
+        logger.info("Deploying blueprints")
+        for blueprint in self.blueprints:
+            blueprint.deploy()

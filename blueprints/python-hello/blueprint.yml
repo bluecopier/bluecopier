@@ -2,4 +2,5 @@ blueprint:
   name: python-hello
   uses:
     - python
-  entrypoint: src/app/main.py
+  entrypoint:
+    - python: src/app/main.py

@@ -1,4 +1,15 @@
+import json
+from enum import Enum
+from typing import Any
+
 JSONObject = bool | int | float | str | list["JSONObject"] | dict[str, "JSONObject"] | None
+
+
+class EnumEncoder(json.JSONEncoder):
+    def default(self, obj: JSONObject) -> Any:
+        if isinstance(obj, Enum):
+            return obj.name
+        return super().default(obj)
 
 
 def merge_json_documents(a: JSONObject, b: JSONObject) -> None:

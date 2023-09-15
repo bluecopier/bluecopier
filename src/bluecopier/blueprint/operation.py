@@ -77,6 +77,8 @@ def merge_operations(operations: PathOperations) -> PathOperation:
             value = merge_json_operations(ops)
         elif ops.count(first_op) == len(ops):
             value = first_op
+        elif path.name == ".gitignore":
+            value = merge_gitignore_operations(ops)
         else:
             raise SystemExit(f"Multiple operations for {path}: {ops}")
         d[path] = value
@@ -110,12 +112,44 @@ def merge_json_operations(ops: list[Operation]) -> WriteFileOp:
 
 def merge_yaml_operations(ops: list[Operation]) -> WriteFileOp:
     first = ops[0]
-    assert isinstance(first, WriteFileOp)
-    a = yaml.safe_load(first.content)
+    match first:
+        case WriteFileOp(content=str(first_content)):
+            pass
+        case _:
+            raise NotImplementedError(first)
+    a = yaml.safe_load(first_content)
     for op in ops[1:]:
-        assert isinstance(op, WriteFileOp)
-        merge_json_documents(a, b=yaml.safe_load(op.content))
+        match op:
+            case WriteFileOp(content=content):
+                pass
+            case _:
+                raise NotImplementedError(op)
+        merge_json_documents(a, b=yaml.safe_load(content))
     write_op = WriteFileOp(destination=first.destination, content=yaml.dump(a))
+    return write_op
+
+
+def merge_gitignore_operations(ops: list[Operation]) -> WriteFileOp:
+    first = ops[0]
+    match first:
+        case WriteFileOp(content=str(content)):
+            pass
+        case _:
+            raise NotImplementedError(first)
+    lines = content.splitlines()
+    lines_set = set(lines)
+    for op in ops[1:]:
+        match op:
+            case WriteFileOp(content=str(content)):
+                pass
+            case _:
+                raise NotImplementedError(op)
+        for line in content.splitlines():
+            if line not in lines_set:
+                lines_set.add(line)
+                lines.append(line)
+
+    write_op = WriteFileOp(destination=first.destination, content="\n".join(lines) + "\n")
     return write_op
 
 

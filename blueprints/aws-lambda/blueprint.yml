@@ -1,0 +1,32 @@
+blueprint:
+  name: aws-lambda-url-docker
+  uses:
+    - python
+  # https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html
+  runtimes:
+    - python{3.7,3.8,3.9,3.10,3.11}
+    - nodejs{14,16,18}
+    - java(7,8,11,17}
+    - dotnet{6,7}
+    - ruby{2.7,3.2}
+  requires:
+    - name: wsgi
+      optional: true
+    - name: asgi
+      optional: true
+  provides:
+    - https
+
+features:
+  zip:
+    default: true
+    include:
+      - src/handler.py
+  docker:
+    default: false
+    include:
+    - Dockerfile
+#  apigateway:
+#    default: false
+  url:
+    default: false

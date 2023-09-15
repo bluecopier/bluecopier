@@ -19,6 +19,12 @@ class CodeHosting(enum.StrEnum):
     BITBUCKET = "bitbucket"
 
 
+class CloudProvider(enum.StrEnum):
+    AWS = "aws"
+    AZURE = "azure"
+    GCP = "gcp"
+
+
 class Runtime(enum.Enum):
     NODE12 = "nodejs", "12"
     NODE14 = "nodejs", "14"

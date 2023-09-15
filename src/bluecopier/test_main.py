@@ -4,7 +4,7 @@ import subprocess
 import venv
 from pathlib import Path
 
-from bluecopier.main import generate as main
+from bluecopier.cli.generate import generate as main
 from bluecopier.template_rendering import ROOT_DIR
 
 
@@ -32,5 +32,5 @@ class PackageManager:
 
 def test_main() -> None:
     output_dir = ROOT_DIR / "output"
-    main(output_dir=output_dir, blueprint_name="python-flask", name="my_project")
+    main(output_dir=output_dir, blueprint_names=["python-flask"], name="my_project", features=[])
     os.chdir(output_dir)
