@@ -156,6 +156,9 @@ norecursedirs = [
     ".mypy_cache",
     "node_modules",
 ]
+testpaths = [
+    "src",
+]
 
 filterwarnings = [
     # https://pypi.org/project/lark-parser/ - v0.12.0 - 2021-08-30 -> moved to `lark`
