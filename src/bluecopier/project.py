@@ -97,7 +97,9 @@ class Project:
         return project
 
     def asdict(self) -> dict[str, Any]:
-        return {"user_options": self.user_options.asdict()}
+        user_options = self.user_options.asdict()
+        del user_options["features"]
+        return {"user_options": user_options}
 
     def write_state(self) -> None:
         bluecopier_path = self.output_path / ".bluecopier"
