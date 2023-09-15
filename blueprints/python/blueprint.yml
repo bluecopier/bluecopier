@@ -3,7 +3,8 @@ blueprint:
   uses:
     - editorconfig
     - license
-  entrypoint: src/app/main.py
+  entrypoint:
+    code: src/app/main.py
 
 features:
   code_linting:

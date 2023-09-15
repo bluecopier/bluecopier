@@ -1,34 +1,23 @@
-#!/usr/bin/env python
-import logging
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
+from bluecopier.cli.app import app
 from bluecopier.enums import CodeHosting, License
 from bluecopier.project import Project
 from bluecopier.user_options import UserOptions
-
-app = typer.Typer(pretty_exceptions_enable=False, rich_markup_mode="rich")
-logger = logging.getLogger(__name__)
-
-
-@app.command()
-def test() -> None:
-    pass
-
-
-@app.command()
-def deploy() -> None:
-    pass
 
 
 @app.command()
 def generate(
     output_dir: Annotated[Path, typer.Argument(file_okay=False)],
-    blueprint_name: Annotated[str, typer.Option("-b", metavar="BLUEPRINT", help="Blueprint name")],
-    edit: Annotated[bool, typer.Option("-e", "--editor", help="Launch in editor after generating")]
-    | None = None,
+    blueprint_names: Annotated[list[str], typer.Option("-b", metavar="BLUEPRINT", help="Blueprint name")],
+    features: Annotated[
+        list[str],
+        typer.Option("-f", metavar="FEATURE", help="Feature name", default_factory=list),
+    ],
+    # | None = None,
     # Project
     description: Annotated[
         str,
@@ -52,6 +41,18 @@ def generate(
             rich_help_panel="Project",
         ),
     ] = True,
+    hooks: Annotated[
+        bool,
+        typer.Option(
+            "--hooks/--no-hooks",
+            help="If pre-commit hooks should run",
+            rich_help_panel="Project",
+        ),
+    ] = True,
+    version: Annotated[
+        str,
+        typer.Option(help="Project version", rich_help_panel="Project"),
+    ] = "0.1.0",
     # Code Hosting
     code_hosting: Annotated[
         CodeHosting,
@@ -72,16 +73,18 @@ def generate(
         typer.Option(help="GitHub organization", rich_help_panel="Code Hosting"),
     ]
     | None = None,
+    # Build
+    build: Annotated[
+        bool,
+        typer.Option("--build/--no-build", help="Build after generating", rich_help_panel="Build"),
+    ] = False,
 ) -> None:
-    logging.basicConfig(level=logging.DEBUG)
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
-
     if name is None:
         name = output_dir.name
     user_options = UserOptions(
-        blueprint_name=blueprint_name,
+        blueprint_names=blueprint_names,
         code_hosting=code_hosting,
-        features={},
+        raw_features=features,
         license_=license,
         output_dir=output_dir,
         project_homepage=homepage,
@@ -89,19 +92,21 @@ def generate(
         publish=bool(publish),
         project_private=not public,
         project_description=description,
+        project_version=version,
         github_org=github_org,
     )
     project = Project(user_options=user_options)
+    for blueprint_name in user_options.blueprint_names:
+        project.load_blueprint(blueprint_name, directly_included=True)
     if user_options.editor == "vscode":
-        project.load_blueprint("devcontainer")
+        project.load_blueprint("devcontainer", directly_included=False)
 
     vcs = project.get_vcs()
     vcs.load_blueprints()
 
-    project.generate()
+    project.resolve_links()
 
-    # Post generation
-    #################
+    project.generate()
 
     # TODO: requires venv to be activated
     # Run formatter
@@ -113,15 +118,15 @@ def generate(
 
     vcs.init()
 
-    project.run_formatters()
+    if hooks:
+        project.run_formatters()
+
+    if build:
+        project.build()
 
     if user_options.publish:
         vcs.publish()
 
     # Open in editor
-    if edit:
-        args = ["/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code", "."]
-        entrypoint = project.entrypoint
-        if entrypoint:
-            args += ["-g", f"{entrypoint}:1:1"]
-        project.run(*args)
+    # if edit:
+    #     if entrypoint:

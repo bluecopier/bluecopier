@@ -37,9 +37,8 @@ TODO items
 
 # TODO: dogfooding enable/disable things in current repo
 # TODO: Enable/disable features
-# TODO: upload to code hosting
 # TODO: tool: documentation (readme, contribution, code of conduct, security, authors, icons)
-# TODO: tool: github (GHA, badges, dependabot)
+# TODO: tool: github (badges, dependabot)
 # TODO: tool: github pages
 # TODO: isort (ruff?)
 # TODO: alex: https://github.com/get-alex/alex
@@ -49,6 +48,9 @@ TODO items
 # TODO: Dockerfile
 # TODO: js/ts (eslint)
 # TODO: Performance is important, 1min from start to working app
+# TODO: package manager abstraction is needed soon, so we can resolve dependencies better
+# TODO: pre-commit hooks depends on pyproject generation
+# TODO: separate apig_wsgi from aws-lambda-zip-url
 
 # 1. Generate Code
 # 2. Generate Tests
@@ -65,4 +67,5 @@ TODO items
 # with options to deploy to more than one place (AWS, GCP, Azure, Heroku, Vercel, Netlify, Render, etc.)
 # with multiple compute options (serverless, docker, kubernetes, etc.)
 # with multiple database options (RDS, Aurora, DynamoDB, MongoDB, etc.)
-
+# Web interface with a wizard to generate and deploy
+# Auth using GitHub

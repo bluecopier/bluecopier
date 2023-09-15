@@ -1,11 +1,12 @@
 import dataclasses
 from collections.abc import Iterable
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from bluecopier.blueprint.configuration import BlueprintConfiguration
 from bluecopier.blueprint.operation import CreateDirectoryOp, Operation, WriteFileOp
 from bluecopier.template_rendering import maybe_render_jinja_template
+from bluecopier.user_options import FeatureValue
 from bluecopier.utils.fileutils import decode_text_or_bytes
 
 if TYPE_CHECKING:
@@ -34,6 +35,15 @@ class Blueprint:
     root_path: Path
     config: BlueprintConfiguration
     project: "Project"
+    directly_included: bool
+    links: dict[str, str] = dataclasses.field(default_factory=dict)
+
+    def feature_enabled(self, feature_name: str) -> FeatureValue:
+        blueprint_features = self.project.user_options.features.get(self.name, {})
+        # TODO: str?
+        default = self.config.features[feature_name]["default"]
+        value = blueprint_features.get(feature_name, default)
+        return value
 
     @property
     def source_root(self) -> str:
@@ -84,3 +94,12 @@ class Blueprint:
 
     def generate(self) -> Iterable[Operation]:
         return []
+
+    def link(self, name: str, value: Any) -> None:
+        self.links[name] = value
+
+    def build(self) -> None:
+        pass
+
+    def deploy(self) -> None:
+        pass

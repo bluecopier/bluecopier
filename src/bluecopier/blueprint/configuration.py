@@ -11,12 +11,25 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class ProvideItem(TypedDict):
+    name: str
+    target: str
+
+
+class RequireItem(TypedDict):
+    name: str
+    optional: NotRequired[bool]
+
+
 class BlueprintNode(TypedDict):
     name: str
     uses: NotRequired[list[str]]
     source_root: NotRequired[str]
+    provides: NotRequired[list[ProvideItem]]
+    requires: NotRequired[list[RequireItem] | list[str]]
     entrypoint: NotRequired[str]
     ignore: NotRequired[list[str]]
+    deploy: NotRequired[dict[str, str]]
 
 
 class FeatureNode(TypedDict):
@@ -46,6 +59,8 @@ class BlueprintConfiguration:
     source_root: str = "src"
     entrypoint: str | None = None
     ignore: set[str] = dataclasses.field(default_factory=set)
+    provides: list[ProvideItem] | None = None
+    requires: list[RequireItem] | list[str] | None = None
 
     def load_from_path(self, *, path: Path) -> None:
         self.parse(path)
@@ -68,6 +83,8 @@ class BlueprintConfiguration:
         ignore = blueprint_node.get("ignore")
         if ignore:
             self.ignore = set(ignore)
+        self.provides = blueprint_node.get("provides", [])
+        self.requires = blueprint_node.get("requires", cast(list[str], []))
 
     def evaluate_feature_node(self, feature: str, feature_node: FeatureNode) -> None:
         self.evaluate_uses_node(feature_node.get("uses", []))
@@ -78,10 +95,15 @@ class BlueprintConfiguration:
             self.load_use(use)
 
     def load_use(self, use: str) -> None:
-        self.loader.load(name=use)
+        self.loader.load(name=use, directly_included=False)
 
     def parse(self, path: Path) -> RootNode:
         with path.open("r") as f:
             root = cast(RootNode, yaml.safe_load(f))
         self.evaluate_root_node(root)
         return root
+
+    def asdict(self) -> dict[str, str]:
+        return {
+            "source_root": self.source_root,
+        }

@@ -1,8 +1,11 @@
 import inspect
+import logging
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NamedTuple, cast
 
 import jinja2
+from jinja2 import TemplateError
 
 import bluecopier
 
@@ -11,6 +14,7 @@ if TYPE_CHECKING:
 
 ROOT_DIR = Path(bluecopier.__file__).parent.parent.parent
 BLUEPRINT_DIR = ROOT_DIR / "blueprints"
+logger = logging.getLogger("tpl")
 
 
 class EnvironmentOverrides(NamedTuple):
@@ -33,6 +37,7 @@ _default_override = EnvironmentOverrides()
 # # ! endif
 LANGUAGE_OVERRIDES: dict[str, EnvironmentOverrides] = {
     "py": EnvironmentOverrides(line_statement_prefix="# !"),
+    "tf": EnvironmentOverrides(line_statement_prefix="// !"),
     # Note: github yaml uses ${{
     "yml": EnvironmentOverrides(
         variable_start_string="<<",
@@ -50,6 +55,20 @@ def current_frame_lineno() -> int | None:
     assert jinja_template is not None
     lineno = jinja_template.get_corresponding_lineno(frame.f_back.f_lineno)
     return cast(int | None, lineno)
+
+
+def jinja2_template_error_lineno() -> int | None:
+    exc_type, value, tb = sys.exc_info()
+    if exc_type is None or not issubclass(exc_type, TemplateError):
+        return None
+    if value is not None and hasattr(value, "lineno"):
+        # in case of TemplateSyntaxError
+        return cast(int, value.lineno)
+    while tb:
+        if tb.tb_frame.f_code.co_filename == "<template>":
+            return tb.tb_lineno
+        tb = tb.tb_next
+    return None
 
 
 class Template(jinja2.Template):
@@ -117,18 +136,21 @@ def maybe_render_jinja_template(*, source_path: Path, content: str, blueprint: "
                 exc.name,
                 exc.filename,
             ) from exc
-        user_options = blueprint.project.user_options
+        project = blueprint.project
+        project_context = project.get_template_context()
+
         context = {
-            "author_name": user_options.author_name,
-            "author_email": user_options.author_email,
             "blueprint": blueprint,
-            "license": user_options.license_,
-            "project": blueprint.project,
-            "python_version": user_options.python_version,
+            **project_context,
         }
+
         try:
             rendered = template.render(source_path=source_path, context=context)
         except jinja2.UndefinedError as exc:
-            raise jinja2.UndefinedError(f"Error in {source_path}: {exc.message}") from exc
+            path = source_path.relative_to(blueprint.root_path)
+            lineno_number = jinja2_template_error_lineno()
+            lineno = ":" + str(lineno_number) if lineno_number else ""
+            logger.exception(f"blueprint/{blueprint.name}/{path}{lineno}: {exc.message}")
+            raise SystemExit from exc
 
     return rendered

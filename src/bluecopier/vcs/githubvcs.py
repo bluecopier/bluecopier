@@ -33,7 +33,7 @@ class GitVCS(VCS):
     project: "Project"
 
     def load_blueprints(self) -> None:
-        self.project.load_blueprint("gitignore")
+        self.project.load_blueprint("gitignore", directly_included=False)
 
     def publish(self) -> None:
         raise NotImplementedError
@@ -43,14 +43,17 @@ class GitVCS(VCS):
 class GitHubVCS(GitVCS):
     def load_blueprints(self) -> None:
         super().load_blueprints()
-        self.project.load_blueprint("github")
+        self.project.load_blueprint("github", directly_included=False)
 
     def git(self, *args: str) -> None:
         self.project.run("git", *args)
 
     def init(self) -> None:
-        logger.info("Creating Git repository")
-        self.git("init", "-q")
+        root_path = self.project.output_path
+        git_path = root_path / ".git"
+        if not git_path.exists():
+            logger.info("Creating Git repository")
+            self.git("init", "-q")
         self.git("add", ".")
         self.git("commit", "-q", "-am", "Initial commit")
         self.git("branch", "-M", "main")

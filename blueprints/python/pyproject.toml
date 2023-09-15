@@ -28,7 +28,12 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "pyproject-fmt",
+  "${project.name}[doc,test,types]"
 ]
+doc = []
+test = []
+types = []
+
 [project.urls]
 Source = "${source_repo}"
 Tracker = "${issue_tracker}"

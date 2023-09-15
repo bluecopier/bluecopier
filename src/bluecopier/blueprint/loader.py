@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 ROOT_DIR = Path(__file__).parent.parent.parent.parent
 BLUEPRINT_DIR = ROOT_DIR / "blueprints"
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ldr")
 
 
 def load_module(module_path: Path, module_name: str) -> ModuleType:
@@ -26,6 +26,7 @@ def load_module(module_path: Path, module_name: str) -> ModuleType:
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
+    logger.debug("Loaded module %s", module_name)
     return module
 
 
@@ -37,7 +38,7 @@ def get_blueprint_class_from_module(module: ModuleType) -> type[Blueprint] | Non
             continue
         if not issubclass(value, Blueprint):
             continue
-        logger.info("Using Blueprint subclass %s.%s", value.__module__, value.__name__)
+        logger.debug("Using Blueprint subclass %s.%s", value.__module__, value.__name__)
         return value
 
     logger.error("No blueprint class found in %s", module)
@@ -50,7 +51,7 @@ class BlueprintLoader:
     project: "Project"
     blueprints_by_name: dict[BlueprintName, Blueprint] = dataclasses.field(default_factory=dict)
 
-    def load(self, name: BlueprintName) -> Blueprint:
+    def load(self, name: BlueprintName, *, directly_included: bool) -> Blueprint:
         blueprint = self.blueprints_by_name.get(name)
         if blueprint is None:
             # TODO: Support for multiple blueprint directories:
@@ -59,13 +60,17 @@ class BlueprintLoader:
             # - etc
             source_path = self.directory_path / name
             try:
-                blueprint = self.load_from_path(name=name, source_path=source_path)
+                blueprint = self.load_from_path(
+                    name=name,
+                    source_path=source_path,
+                    directly_included=directly_included,
+                )
             except FileNotFoundError as exc:
                 raise BlueprintNotFoundError(f"Blueprint {name} not found.") from exc
             self.blueprints_by_name[name] = blueprint
         return blueprint
 
-    def load_from_path(self, *, name: str, source_path: Path) -> Blueprint:
+    def load_from_path(self, *, name: str, source_path: Path, directly_included: bool) -> Blueprint:
         if not source_path.exists():
             raise FileNotFoundError(f"Blueprint {name} not found.")
 
@@ -88,8 +93,12 @@ class BlueprintLoader:
             root_path=source_path,
             config=config,
             project=self.project,
+            directly_included=directly_included,
         )
-        logger.info("Loaded blueprint %s", name)
+        logger.debug("Loaded blueprint %s", name)
         return blueprint
 
     # TODO: load_from_github("user/repo")
+
+    def blueprint_names(self) -> set[str]:
+        return set(self.blueprints_by_name.keys())

@@ -1,0 +1,17 @@
+{
+  "variable": {
+    "function_name": {
+      "description": "Name of the Lambda function",
+      "type": "string"
+    },
+    "region_name": {
+      "description": "Name of the AWS Region",
+      "type": "string",
+      "default": "us-east-1"
+    },
+    "source_root": {
+      "description": "Root directory of the source code",
+      "type": "string"
+    }
+  }
+}
