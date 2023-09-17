@@ -1,0 +1,6 @@
+[project]
+dependencies = [
+# ! if blueprint.feature_enabled("zip")
+  "apig-wsgi",
+# ! endif
+]

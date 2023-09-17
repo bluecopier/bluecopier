@@ -63,16 +63,26 @@ class Terraform:
             raise SystemExit
 
     def apply(self, *, auto_approve: bool = False) -> None:
-        args = ["terraform", "apply"]
+        args = ["terraform", "apply", "-input=false", "-no-color", "-var-file=auto.tfvars.json"]
         if auto_approve:
             args.append("-auto-approve")
 
         logger.info("Deploying")
-        result = self.run(*args, capture_output=True)
-        if result.returncode:
+        p = subprocess.Popen(
+            args,
+            cwd=str(self.root_path.absolute()),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        assert p.stdout is not None
+        while True:
+            line = p.stdout.readline()
+            if not line:
+                break
+            logger.info(line.decode("utf-8")[:-1])
+
+        if p.returncode:
             logger.error("Deploy failed")
-            logger.info(result.stdout.decode("utf-8"))
             raise SystemExit
         else:
             logger.info("Deployed")
-            logger.info(result.stdout.decode("utf-8"))

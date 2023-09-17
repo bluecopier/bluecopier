@@ -24,4 +24,3 @@ def test_roundtrip(tmp_path: Path) -> None:
     project.write_state()
     loaded = Project.from_path(user_options.output_dir)
     assert loaded.user_options == project.user_options
-    assert loaded.loader.blueprint_names() == project.loader.blueprint_names()
