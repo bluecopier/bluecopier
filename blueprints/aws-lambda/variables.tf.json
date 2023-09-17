@@ -4,6 +4,15 @@
       "description": "Name of the Lambda function",
       "type": "string"
     },
+    "image_tag": {
+      "description": "Docker image tag",
+      "type": "string",
+      "default": "latest"
+    },
+    "project_name": {
+      "description": "Name of the project",
+      "type": "string"
+    },
     "region_name": {
       "description": "Name of the AWS Region",
       "type": "string",

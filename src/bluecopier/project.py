@@ -32,8 +32,8 @@ class Project:
     def __post_init__(self) -> None:
         self.loader = BlueprintLoader(project=self)
 
-    def load_blueprint(self, blueprint: BlueprintName, *, directly_included: bool) -> Blueprint:
-        return self.loader.load(name=blueprint, directly_included=directly_included)
+    def load_blueprint(self, name: BlueprintName, *, directly_included: bool) -> Blueprint:
+        return self.loader.load(name=name, directly_included=directly_included)
 
     @property
     def name(self) -> str:
@@ -89,16 +89,20 @@ class Project:
 
     @classmethod
     def from_path(cls, project_path: Path) -> "Project":
+        logger.info("Loading project state")
         state_path = project_path / ".bluecopier" / "state.yml"
         with state_path.open("rt") as f:
             state = yaml.load(f, Loader=yaml.Loader)  # noqa: S506
         user_options = state.pop("user_options")
-        project = cls(user_options=UserOptions.from_dict(user_options), **state)
-        return project
+        self = cls(user_options=UserOptions.from_dict(user_options), **state)
+        for name in self.user_options.blueprint_names:
+            self.load_blueprint(name=name, directly_included=True)
+        return self
 
     def asdict(self) -> dict[str, Any]:
         user_options = self.user_options.asdict()
         del user_options["features"]
+        del user_options["secrets"]
         return {"user_options": user_options}
 
     def write_state(self) -> None:

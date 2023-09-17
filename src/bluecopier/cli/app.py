@@ -11,5 +11,5 @@ def bootstrap(
     debug: Annotated[bool, typer.Option("--debug", help="Enable debug logging")] = False,
 ) -> None:
     level = logging.DEBUG if debug else logging.INFO
-    logging.basicConfig(level=level, format="%(levelname).1s: %(message)s")
+    logging.basicConfig(level=level, format="%(levelname).1s %(name)s: %(message)s")
     logging.getLogger("urllib3").setLevel(logging.WARNING)

@@ -19,7 +19,7 @@ provider "aws" {
 }
 
 resource "aws_iam_role" "iam_for_lambda" {
-  name = "iam-for-lambda-${var.function_name}"
+  name = "iam-for-lambda-${var.project_name}"
 
   assume_role_policy = jsonencode({
     Version   = "2012-10-17"
@@ -38,7 +38,7 @@ resource "aws_iam_role" "iam_for_lambda" {
 }
 
 resource "aws_iam_policy" "function_logging_policy" {
-  name   = "function-logging-policy-${var.function_name}"
+  name   = "function-logging-policy-${var.project_name}"
   policy = jsonencode({
     "Version" : "2012-10-17",
     "Statement" : [
@@ -67,15 +67,9 @@ resource "aws_cloudwatch_log_group" "lambda_log_group" {
   }
 }
 
-// ! if blueprint.feature_enabled("zip")
-data "archive_file" "lambda_function_zip" {
-  type        = "zip"
-  output_path = "package.zip"
-  source_dir  = "${path.module}/${var.source_root}"
-}
-// ! elif blueprint.feature_enabled("docker")
+// ! if blueprint.feature_enabled("docker")
 data "aws_ecr_repository" "lambda_ecr_repo" {
-  name = "lambda-${var.function_name}"
+  name = var.project_name
 }
 // ! endif
 
@@ -85,16 +79,18 @@ resource "aws_lambda_function" "lambda_function" {
   role          = aws_iam_role.iam_for_lambda.arn
 
 // ! if blueprint.feature_enabled("zip")
-  filename         = data.archive_file.lambda_function_zip.output_path
+  filename         = "${path.module}/build/package.zip"
   handler          = "handler.lambda_handler"
-  source_code_hash = data.archive_file.lambda_function_zip.output_base64sha256
+  source_code_hash = filebase64sha256("${path.module}/build/package.zip")
   runtime          = "python3.10"
 // ! elif blueprint.feature_enabled("docker")
-  image_uri        = "${data.aws_ecr_repository.lambda_ecr_repo.repository_url}:latest"
+  image_uri        = "${data.aws_ecr_repository.lambda_ecr_repo.repository_url}:${var.image_tag}"
   package_type     = "Image"
+  architectures    = ["arm64"]
 // ! endif
   timeout          = 120
   publish          = true
+
 }
 
 // ! if blueprint.feature_enabled("url")

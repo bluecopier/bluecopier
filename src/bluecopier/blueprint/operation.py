@@ -31,6 +31,13 @@ class CreateDirectoryOp(Operation):
 MAX_CONTENT_LENGTH = 50
 
 
+def path_is_identical(path: Path, content: bytes | str) -> bool:
+    if isinstance(content, str):
+        return path.read_text() == content
+    else:
+        return path.read_bytes() == content
+
+
 @dataclasses.dataclass
 class WriteFileOp(Operation):
     content: bytes | str
@@ -39,10 +46,12 @@ class WriteFileOp(Operation):
     def execute(self, output_dir: Path) -> None:
         path = output_dir / self.destination
         content = self.content
-        if isinstance(content, str):
-            path.write_text(content)
-        else:
-            path.write_bytes(content)
+
+        if not path.exists() or not path_is_identical(path, content):
+            if isinstance(content, str):
+                path.write_text(content)
+            else:
+                path.write_bytes(content)
         source = self.source
         if source:
             path.chmod(source.stat().st_mode)

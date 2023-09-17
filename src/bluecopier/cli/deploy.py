@@ -29,11 +29,12 @@ def deploy(
     # 2. Install vendor dependencies (e.g. Flask and requests) and build zip file/docker image
     project.build()
     project.deploy()
-
     terraform = Terraform(root_path=project.output_path)
     project_context = {
-        "function_name": project.name + "-" + secrets.token_urlsafe(6),
+        "project_name": project.name,
+        "function_name": project.name + "-" + secrets.token_urlsafe(6).lower(),
         "region_name": "eu-north-1",
+        "source_root": str(project.output_path),
     }
     variables = {}
     for name in terraform.parse_variable_definitions():
